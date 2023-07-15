@@ -1,37 +1,38 @@
+from enum import Enum
+import hwtypes as ht
 
-board = """
-abbc
-adbc
-edff
-eggf"""
+class Board:
+    def __init__(self, board: str, key_to_op):
+        key_to_locs = {v:[] for v in key_to_op}
+        vars = {}
+        N = int(len(board.strip())**0.5)
+        for r, row in enumerate(board.strip().split('\n')):
+            for c, v in enumerate(row):
+                vars[(r,c)] = ht.SMTBitVector[]
+                assert v in key_to_op
+                key_to_locs[v].append((r,c))
+        assert
 
-Add = lambda a,b: a+b
-Sub = lambda a,b: a-b
-Mul = lambda a,b: a*b
 
-key = dict(
-    a=(1,Sub),
-    b=(9,Add),
-    c=(2,Sub),
-    d=(1,Sub),
-    e=(4,Mul),
-    f=(16,Mul),
-    g=(4,Add)
+
+
+
+board0 = """
+aabb
+ccde
+fgde
+fghh
+"""
+
+key0 = dict(
+    a=(2, '/'),
+    b=(1, '-'),
+    c=(6, '+'),
+    d=(5, '+'),
+    e=(4, '*'),
+    f=(1, '-'),
+    g=(3, '*'),
+    h=(2, '/'),
 )
 
-
-rows = board_str.split("\n")
-if len(rows[0])==0:
-    rows = rows[1:]
-if len(rows[-1])==0:
-    rows = rows[:-1]
-
-N = len(rows)
-Vars = 
-
-Var = lambda name: pulp.LpVariable(name, cat='Integer')
-assert all(N == len(row) for row in rows)
-for ri, row in enumerate(rows):
-    for ci, val in enumerate(row):
-
-
+b = Board(board0, key0)

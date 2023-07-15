@@ -94,6 +94,7 @@ lut = {
 def inbounds(v):
     return v >=0 and v < n
 
+
 formula = []
 for r in range(n):
     for c in range(n):

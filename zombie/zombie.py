@@ -51,9 +51,9 @@ class Board:
             return self.path(new_idx, new_dir, bounced, spots)
 
     def _next(self, idx, dir):
-
+        raise NotImplementedError
         #returns the new_idx or None
-        loc = 
+        #loc =
 
 
 char_to_enum = {

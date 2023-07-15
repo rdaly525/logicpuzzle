@@ -7,3 +7,99 @@ Games that can be encoded as SMT relatively easily
 
 Done
   Unruly (Do first)
+
+
+ALL:
+    Black Box
+        Yes, known
+    Bridges
+        Yes?, no cycles constraint
+    Cube
+        No, Move Sequence
+    Dominosa
+        Yes, known
+    Fifteen:
+        Maybe? Move Sequence
+            Encoding this might have chess insights
+    Filling
+        Yes?, How to count within a region?
+            Interesting to implement
+    Flip
+        Yes
+    Flood:
+        No, move sequence. (really annoying to input)
+    Galaxies:
+        Yes, Known
+    Guess:
+        Yes, refinement sequence
+    Inertia:
+        No, Move sequence, also SMT seems bad encoding
+    Keen:
+        Yes, Known
+    Light Up:
+        Yes?
+    Loopy:
+        Yes, one cycle issue
+    Magnets
+        Yes?
+    Map:
+        Yes, 4 color problem
+    Mines
+        ??, Would be fun to try to solve it
+            Strategy would be to prove things about squares.
+            I have the one generic big formula. Every revelation adds constraints
+            What question could I ask which would answer the question?
+    Mosaic
+        Yes?
+            Would be fun/easy
+    Net
+        Yes?
+            edge encoding
+    Netslide
+        No, Move sequence
+    Palisade
+        Yes? Encoding size of regions
+    Pattern
+        Yes?
+    Pearl
+        Yes, single cycle
+    Pegs
+        No? Move sequence
+    Range
+        Yes?
+    Rectangles
+        Yes? Encoding rectangular regions
+    Same Game
+        No, Move sequence
+    SIgnpost
+        Yes
+    Singles
+        Yes, easy?
+    Sixteen
+        No? Rubics cube, sequence of moves
+    Slant
+        Yes?    No cycle constraint?
+            Divide into regions. Each region must touch the edge
+    Solo
+        Yes
+    Tents
+        Yes?
+    Towers
+        Yes?
+            Constraint is hard to encode
+    Tracks
+        Yes?
+    Twiddle
+        Rubiks puzzle
+    UNdead
+        Yes
+    Unequal
+        Yes
+    Unrly
+        Yes
+    Untangle
+        No? It is in the reals.
+
+
+
+

@@ -60,8 +60,6 @@ check([1,2,3], [1,2,3], 3, 0)
 def solve(guess, f):
     fval = f.value.simplify()
     size = smt.get_formula_size(fval)
-    print("S", size)
-    print(fval.serialize())
     with smt.Solver('z3', logic=BV) as solver:
         solver.add_assertion(f.value)
         solved = solver.solve()
@@ -85,7 +83,7 @@ def solver(num_slots, num_colors, max_guess, ans):
         print(f"Guess: {guess_int}, (Black, White): {nb}, {nw}", flush=True)
         if (nb, nw) == (num_slots, 0):
             print("Solved!")
-            return k
+            return k+1
 
         N = num_slots
         #key[ai][gi]
@@ -112,7 +110,7 @@ def solver(num_slots, num_colors, max_guess, ans):
 
 
 import numpy as np
-for n in range(3, 4):
+for n in range(5, 6):
     print("-"*80)
     print("Solving ", n)
     ans = np.random.randint(0, n, (n,)).tolist()
