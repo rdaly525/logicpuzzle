@@ -1,9 +1,32 @@
 
 from enum import Enum
 from collections import namedtuple
+
+import itertools as it
+import hwtypes as ht
+from hwtypes import smt_utils as fc
+import pysmt.shortcuts as smt
+
+
+_cache = {}
+def new_var(s, bvlen):
+    if bvlen is None:
+        return ht.SMTBit(name=s)
+    if s in _cache:
+        return _cache[s]
+    v = ht.SMTBitVector[bvlen](name=s)
+    _cache[s] = v
+    return v
+
+def get_model(query, solver_name='z3', logic=None):
+    vars = query.get_free_variables()
+    model = smt.get_model(smt.And(query), solver_name=solver_name, logic=logic)
+    if model:
+        return {v: int(model.get_value(v).constant_value()) for v in vars}
+    return False
+
+
 Spot = namedtuple("Spot", ("idx","bounced"))
-
-
 class Kind(Enum):
     diagl=0
     diagr=1
