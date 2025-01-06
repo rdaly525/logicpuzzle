@@ -63,13 +63,13 @@ class SMTConstraintProblem:
     def free_vars(self):
         return self._free_vars
 
-    def new_var(self, s, bvlen=None, is_unique=False):
+    def new_var(self, name, bvlen=None, is_unique=True):
         """
         Create a new variable and add it to the solver.
 
         Parameters
         ----------
-        s : str
+        name : str
             The name of the variable.
         bvlen : int, optional
             The bitvector length of the variable. If None, the default bvlen is used. 
@@ -85,8 +85,8 @@ class SMTConstraintProblem:
         if bvlen is None:
             bvlen = self.default_bvlen
         bv_info = int(self.isZ3)
-        key = f"{s}_{bv_info}_{bvlen}"
-        var_name = f"{s}_{bvlen}"
+        key = f"{name}_{bv_info}_{bvlen}"
+        var_name = f"{name}_{bvlen}"
         if key in _cache:
             return _cache[key]
         if bvlen==0:

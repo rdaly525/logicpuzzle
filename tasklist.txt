@@ -1,1 +1,15 @@
--Add a utils file from 
+
+Short Term:
+-Add a utils file from Quilt project
+-Update all puzzles to use the smtutils
+-Add tests for all puzzles
+
+Medium Term
+-Connect the front-end from simon tatham
+
+Long Term
+-Wrap this into an App
+
+Research Goals:
+-Automatically synthesize 'tactics'
+
