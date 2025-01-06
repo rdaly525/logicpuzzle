@@ -1,0 +1,1 @@
+from .dominosa import Board, DominosaSolver
