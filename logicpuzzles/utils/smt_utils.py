@@ -23,7 +23,7 @@ def _to_int(val):
 
 
 class SMTConstraintProblem:
-    def __init__(self, default_bvlen: int = 32, z3_solver=True, timeout=15000, logic=None, solver_name='z3', verbose=False):
+    def __init__(self, default_bvlen: int = 32, z3_solver=False, timeout=15000, logic=None, solver_name='z3', verbose=False):
         self.default_bvlen = default_bvlen
         self.isZ3 = z3_solver
         self.BitVector = ht.z3BitVector if self.isZ3 else ht.SMTBitVector
@@ -88,12 +88,13 @@ class SMTConstraintProblem:
         key = f"{name}_{bv_info}_{bvlen}"
         var_name = f"{name}_{bvlen}"
         if key in _cache:
-            return _cache[key]
-        if bvlen==0:
-            v = self.Bit(name=var_name)
+            v =  _cache[key]
         else:
-            v = self.BV(name=var_name)
-        _cache[key] = v
+            if bvlen==0:
+                v = self.Bit(name=var_name)
+            else:
+                v = self.BV(name=var_name)
+            _cache[key] = v
         # Always add to free vars
         self._free_vars.append(v.value)
         # Add to unique vars if requested
