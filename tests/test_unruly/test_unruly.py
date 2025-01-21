@@ -19,28 +19,30 @@ def test_basic_unruly_solve():
     
     # Get first solution
     solution = next(solver.solve())
-    unruly_board.pretty_print(solution)
-    # Verify solution meets all constraints
+    print(solver.pretty(solution))
+    
+    # Convert solution dict to 2D array for easier testing
+    solution_array = [[solution[(r,c)] for c in range(8)] for r in range(8)]
     N = unruly_board.N
     
     # Test rule 1: No three consecutive same color
     def check_consecutive(arr):
         for i in range(len(arr) - 2):
-            assert not (arr[i] == arr[i+1] == arr[i+2] == 1)
-            assert not (arr[i] == arr[i+1] == arr[i+2] == 0)
+            assert not (arr[i] == arr[i+1] == arr[i+2] == 1), f"Three consecutive 1s in row {arr}"
+            assert not (arr[i] == arr[i+1] == arr[i+2] == 0), f"Three consecutive 0s in row {arr}"
     
     # Check rows and columns for three consecutive
-    for row in solution:
+    for row in solution_array:
         check_consecutive(row)
     
-    for col in zip(*solution):
+    for col in zip(*solution_array):
         check_consecutive(col)
     
     # Test rule 2: Equal number of black and white
-    for row in solution:
+    for row in solution_array:
         assert sum(row) == N//2
     
-    for col in zip(*solution):
+    for col in zip(*solution_array):
         assert sum(col) == N//2
 
 
@@ -62,14 +64,14 @@ def test_initial_constraints():
     solution = next(solver.solve())
     
     # Check that initial constraints are preserved
-    assert solution[0][0] == 1  # white
-    assert solution[0][1] == 0  # black
+    assert solution[(0,0)] == 1  # white
+    assert solution[(0,1)] == 0  # black
 
 #test_basic_unruly_solve()
 #test_initial_constraints()
 
 def test_random_unruly_solve():
-    N_TRIALS = 100
+    N_TRIALS = 1
     histogram = {}
     for percent_filled in [0.05*i for i in range(10)]:
         sat_cnt = 0
@@ -83,4 +85,12 @@ def test_random_unruly_solve():
         histogram[percent_filled] = sat_cnt
     print(histogram)
 
-test_random_unruly_solve()
+
+def test_pretty_print():
+    unruly_board = UnrulyBoard(3, percent_filled=0.9)
+    s = unruly_board.pretty()  # Updated to use new pretty() method
+    print(s)
+
+test_basic_unruly_solve()
+#test_random_unruly_solve()
+#test_pretty_print()

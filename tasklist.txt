@@ -1,8 +1,12 @@
 
 Short Term:
--Add a utils file from Quilt project
+-Create a generic grid puzzle API
 -Update all puzzles to use the smtutils
 -Add tests for all puzzles
+
+Puzzles:
+    -The Witness
+    - Nurikabe world
 
 Medium Term
 -Connect the front-end from simon tatham
@@ -12,4 +16,8 @@ Long Term
 
 Research Goals:
 -Automatically synthesize 'tactics'
+-Create new rulesets
+
+DONE
+-Add a utils file from Quilt project
 

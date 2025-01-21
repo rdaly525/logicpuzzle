@@ -16,88 +16,125 @@ from pysmt.logics import BV
 import itertools as it
 import random
 from ..utils.smt_utils import SMTConstraintProblem
+from ..board import Board, Face, Vertex, Edge
+from dataclasses import dataclass
+import typing as tp
 
 # An unruly board is a grid of black, white, and empty squares
 # black is 0, white is 1, empty is 2
-class UnrulyBoard:
-    def __init__(self, N, board=None, percent_filled=0.2):
+class UnrulyBoard(Board):
+    @dataclass
+    class face_t(Face):
+        val: int = None
+        def __str__(self):
+            if self.val is None:
+                return " "
+            return str(self.val)
+
+    vertex_t = Vertex
+    edge_t = Edge
+
+    def __init__(self, N, faces=None, percent_filled=0.2):
+        super().__init__(N, N)
         self.N = N
-        if board is None:
-            self._random_board(percent_filled)
-        else:
-            self.board = board
-        assert len(self.board) == self.N
-        assert all(len(row) == self.N for row in self.board)
+        if faces is None:
+            faces = self._random_board(percent_filled)
+        assert len(faces) == self.nR
+        assert all(len(row) == self.nC for row in faces)
+         
+        for (r, c), face in self.f.items():
+            if faces[r][c] != 2:
+                face.val = faces[r][c]
+
 
     def _random_board(self, percent_filled=0.2):
         # Calculate number of squares to fill
-        total_squares = self.N * self.N
+        total_squares = self.nR * self.nC
         num_filled = int(total_squares * percent_filled)
         
         # Create list of all positions
-        positions = [(r,c) for r in range(self.N) for c in range(self.N)]
+        positions = [(r,c) for r in range(self.nR) for c in range(self.nC)]
         
         # Randomly select positions to fill
         fill_positions = random.sample(positions, num_filled)
         
         # Initialize board and fill selected positions
-        self.board = [[2 for _ in range(self.N)] for _ in range(self.N)]
+        faces = [[2 for _ in range(self.nC)] for _ in range(self.nR)]
         for r,c in fill_positions:
-            self.board[r][c] = random.randint(0,1)
+            faces[r][c] = random.randint(0,1)
+        return faces
 
+class UnrulySolver(SMTConstraintProblem, Board):
+    class UnrulyFace(Face):
+        def __init__(self, r: int, c: int, solver: 'UnrulySolver', initial_val: int | None):
+            super().__init__(r, c)
+            self.var = solver.new_var(f"face_{r}_{c}")
+            self.initial_val = initial_val
 
-    def pretty_print(self, sol=None):
-        # First print the board
-        print("\n".join([" ".join([str(self.board[r][c]) for c in range(self.N)]) for r in range(self.N)]))
-        if sol is not None:
-            print("\n")
-            # Then print the solution
-            print("\n".join([" ".join([str(sol[r][c]) for c in range(self.N)]) for r in range(self.N)]))
+        def __str__(self):
+            if self.initial_val is None:
+                return " "
+            return str(self.initial_val)
 
+    face_t = UnrulyFace
+    vertex_t = UnrulyBoard.vertex_t
+    edge_t = UnrulyBoard.edge_t
 
-class UnrulySolver(SMTConstraintProblem):
-    def __init__(self, board, verbose=False):
-        bvlen = len(bin(board.N))
-        super().__init__(default_bvlen=bvlen, verbose=verbose)
-        self.board = board
+    def create_face(self, r: int, c: int) -> UnrulyFace:
+        initial_val = self.input_board.f[(r, c)].val
+        return self.face_t(r, c, self, initial_val)
 
-        # Create the problem variables
-        self.vars = [[self.new_var(f"x_{r}_{c}") for c in range(self.board.N)] for r in range(self.board.N)]
+    def __init__(self, board: UnrulyBoard, verbose=False):
+        if not isinstance(board, UnrulyBoard):
+            raise TypeError("board must be an instance of UnrulyBoard")
+            
+        bvlen = len(bin(max(board.nR, board.nC)))  # Use max of dimensions for bit vector length
+        self.input_board = board  # Store input board for create_face to access
+        SMTConstraintProblem.__init__(self, default_bvlen=bvlen, verbose=verbose)
+        Board.__init__(self, board.nR, board.nC)
 
     def constraint_binary(self):
         # Each cell must be either 0 or 1
-        for r, c in it.product(range(self.board.N), range(self.board.N)):
-            self.add_constraint((self.vars[r][c] < 2))
+        for face in self.f.values():
+            self.add_constraint((face.var < 2))
 
     def constraint_initial_board(self):
         # Each cell must match initial board where specified
-        for r, c in it.product(range(self.board.N), range(self.board.N)):
-            if self.board.board[r][c] != 2:
-                self.add_constraint(self.vars[r][c] == self.board.board[r][c])
+        for face in self.f.values():
+            if face.initial_val is not None:
+                self.add_constraint(face.var == face.initial_val)
 
     def constraint_no_consecutive(self):
         # No three consecutive cells can be same color in rows or columns
-        for r in range(self.board.N):
-            for c in range(self.board.N-2):
+        for r in range(self.nR):
+            for c in range(self.nC - 2):
                 # Check rows
-                self.add_constraint(~((self.vars[r][c]==1) & (self.vars[r][c+1]==1) & (self.vars[r][c+2]==1)))
-                self.add_constraint(~((self.vars[r][c]==0) & (self.vars[r][c+1]==0) & (self.vars[r][c+2]==0)))
+                faces = [self.f[(r, c)], self.f[(r, c+1)], self.f[(r, c+2)]]
+                total = self.gen_total([face.var for face in faces])
+                self.add_constraint(total != 0)  # Not all zeros
+                self.add_constraint(total != 3)  # Not all ones
 
-        for r in range(self.board.N-2):
-            for c in range(self.board.N):
-                # Check columns  
-                self.add_constraint(~((self.vars[r][c]==1) & (self.vars[r+1][c]==1) & (self.vars[r+2][c]==1)))
-                self.add_constraint(~((self.vars[r][c]==0) & (self.vars[r+1][c]==0) & (self.vars[r+2][c]==0)))
+        for r in range(self.nR - 2):
+            for c in range(self.nC):
+                # Check columns
+                faces = [self.f[(r, c)], self.f[(r+1, c)], self.f[(r+2, c)]]
+                total = self.gen_total([face.var for face in faces])
+                self.add_constraint(total != 0)  # Not all zeros
+                self.add_constraint(total != 3)  # Not all ones
 
     def constraint_equal_counts(self):
         # Equal number of black and white in each row and column
-        for r in range(self.board.N):
-            row_sum = self.gen_total(self.vars[r])
-            self.add_constraint(row_sum == self.board.N//2)
+        # Check rows
+        for r in range(self.nR):
+            row_vars = [self.f[(r, c)].var for c in range(self.nC)]
+            row_sum = self.gen_total(row_vars)
+            self.add_constraint(row_sum == self.nR // 2)
 
-        for c in range(self.board.N):
-            col_sum = self.gen_total([self.vars[r][c] for r in range(self.board.N)])
-            self.add_constraint(col_sum == self.board.N//2)
+        # Check columns
+        for c in range(self.nC):
+            col_vars = [self.f[(r, c)].var for r in range(self.nR)]
+            col_sum = self.gen_total(col_vars)
+            self.add_constraint(col_sum == self.nC // 2)
 
     def constraint_unruly(self):
         self.constraint_initial_board()
@@ -105,72 +142,16 @@ class UnrulySolver(SMTConstraintProblem):
         self.constraint_equal_counts()
         self.constraint_binary()
 
-    def solve(self):
+    def solve(self) -> tp.Iterator[dict[tuple[int, int], int]]:
         self.constraint_unruly()
         for model in super().solve():
-            yield [[model[self.vars[r][c].value] for c in range(self.board.N)] for r in range(self.board.N)]
+            solution = {idx: model[face.var.value] for idx, face in self.f.items()}
+            yield solution
 
-
-##WORKS
-#n = 8
-#
-##white 1, black 2
-#board = [
-#    [1, 2, 0, 2, 0, 0, 1, 0],
-#    [0, 0, 0, 0, 0, 1, 0, 0],
-#    [0, 2, 0, 0, 0, 0, 0, 1],
-#    [0, 0, 2, 0, 1, 0, 0, 0],
-#    [0, 0, 0, 0, 0, 0, 1, 1],
-#    [0, 0, 1, 0, 0, 2, 0, 0],
-#    [0, 0, 0, 0, 1, 0, 0, 0],
-#    [0, 1, 1, 0, 0, 0, 0, 0],
-#]
-#
-#fvs = [[SBV[1](name=f"{r},{c}") for r in range(n)] for c in range(n)]
-#
-#def f(a,b,c):
-#    return (a&b&c == 0) & (a|b|c == 1)
-#
-#formula = SMTBit(1)
-#for r in range(n):
-#    for c in range(n):
-#        #Initial board must match
-#        if board[r][c] == 1:
-#            formula &= fvs[r][c] == SBV[1](0)
-#        if board[r][c] == 2:
-#            formula &= fvs[r][c] == SBV[1](1)
-#        # No 3 consecutive can be the same color
-#        if r in range(1, n-1):
-#            formula &= f(fvs[r-1][c], fvs[r][c], fvs[r+1][c])
-#        if c in range(1, n-1):
-#            formula &= f(fvs[r][c-1], fvs[r][c], fvs[r][c+1])
-#
-##Sum of each column and row must equal n/2
-#sbits = len(bin(n))-2
-#for r in range(n):
-#    s = SBV[sbits](0)
-#    for c in range(n):
-#        s += fvs[r][c].zext(sbits-1)
-#    formula &= (s == n//2)
-#
-#for c in range(n):
-#    s = SBV[sbits](0)
-#    for r in range(n):
-#        s += fvs[r][c].zext(sbits-1)
-#    formula &= (s == n//2)
-#
-#with smt.Solver('z3', logic=BV) as solver:
-#    solver.add_assertion(formula.value)
-#    solved = solver.solve()
-#    assert solved
-#    print("Solved")
-#    for r in range(n):
-#        rvals = []
-#        for c in range(n):
-#            var = fvs[r][c]
-#            smt_var = solver.get_value(var.value)
-#            cval = smt_var.constant_value() 
-#            rvals.append(str(int(cval)))
-#        print(" ".join(rvals))
-#
-#
+    def pretty(self, solution):
+        # construct new UnrulyBoard object with the solution, then pretty print it
+        faces = [[solution[(r, c)] for c in range(self.nC)] for r in range(self.nR)]
+        N = self.nR
+        assert N == self.nC
+        board = UnrulyBoard(N, faces)
+        return board.pretty()
