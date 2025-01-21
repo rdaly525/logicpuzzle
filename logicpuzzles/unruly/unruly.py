@@ -106,34 +106,21 @@ class UnrulySolver(SMTConstraintProblem, Board):
 
     def constraint_no_consecutive(self):
         # No three consecutive cells can be same color in rows or columns
-        for r in range(self.nR):
-            for c in range(self.nC - 2):
-                # Check rows
-                faces = [self.f[(r, c)], self.f[(r, c+1)], self.f[(r, c+2)]]
-                total = self.gen_total([face.var for face in faces])
-                self.add_constraint(total != 0)  # Not all zeros
-                self.add_constraint(total != 3)  # Not all ones
-
-        for r in range(self.nR - 2):
-            for c in range(self.nC):
-                # Check columns
-                faces = [self.f[(r, c)], self.f[(r+1, c)], self.f[(r+2, c)]]
-                total = self.gen_total([face.var for face in faces])
-                self.add_constraint(total != 0)  # Not all zeros
-                self.add_constraint(total != 3)  # Not all ones
+        for faces in self.iter_consecutive_faces(3, 'both'):
+            total = self.gen_total([face.var for face in faces])
+            self.add_constraint(total != 0)  # Not all zeros
+            self.add_constraint(total != 3)  # Not all ones
 
     def constraint_equal_counts(self):
         # Equal number of black and white in each row and column
         # Check rows
-        for r in range(self.nR):
-            row_vars = [self.f[(r, c)].var for c in range(self.nC)]
-            row_sum = self.gen_total(row_vars)
+        for faces in self.iter_consecutive_faces(self.nR, 'row'):
+            row_sum = self.gen_total([face.var for face in faces])
             self.add_constraint(row_sum == self.nR // 2)
 
         # Check columns
-        for c in range(self.nC):
-            col_vars = [self.f[(r, c)].var for r in range(self.nR)]
-            col_sum = self.gen_total(col_vars)
+        for faces in self.iter_consecutive_faces(self.nC, 'col'):
+            col_sum = self.gen_total([face.var for face in faces])
             self.add_constraint(col_sum == self.nC // 2)
 
     def constraint_unruly(self):

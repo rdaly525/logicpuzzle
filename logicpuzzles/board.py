@@ -283,4 +283,29 @@ class Board:
             if vertex := self.get_vertex(vertex_idx):
                 yield vertex
 
+    def iter_consecutive_faces(self, n: int, direction: str = 'both') -> tp.Iterator[list[Face]]:
+        """Iterate through all sets of n consecutive faces in specified direction.
+        
+        Args:
+            n: Number of consecutive faces to return in each group
+            direction: One of 'row', 'col', or 'both' to specify iteration direction
+        
+        Yields:
+            List of n consecutive Face objects
+        """
+        if direction not in ('row', 'col', 'both'):
+            raise ValueError("direction must be 'row', 'col' or 'both'")
+
+        # Iterate through rows
+        if direction in ('row', 'both'):
+            for r in range(self.nR):
+                for c in range(self.nC - n + 1):
+                    yield [self.f[(r, c+i)] for i in range(n)]
+
+        # Iterate through columns
+        if direction in ('col', 'both'):
+            for c in range(self.nC):
+                for r in range(self.nR - n + 1):
+                    yield [self.f[(r+i, c)] for i in range(n)]
+
 
