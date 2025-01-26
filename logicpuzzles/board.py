@@ -118,21 +118,14 @@ class Board:
         """
         Creates a string representation of the board as a grid with vertices, edges, and faces.
         
-        The grid is drawn using ASCII characters, with:
-        - Vertices at grid intersections (default: '+')
-        - Horizontal edges between vertices (default: '-')  
-        - Vertical edges between vertices (default: '|')
-        - Faces in the grid cells (default: ' ')
-
-        Args:
-            h_len: Width of each grid cell in characters (default: 8)
-            v_len: Height of each grid cell in characters (default: 4)
-
-        Returns:
-            String representation of the board grid
+        For multi-character strings:
+        - 2 chars: first char is centered
+        - 3-4 chars: second char is centered
         """
-        edge_row = list(("+"+"-"*(h_len-1))*self.nC + "+")
-        face_row = list(("|" + " "*(h_len-1)) * self.nC + "|")
+        # Create template rows with proper spacing
+        h_space = h_len - 1  # Space between vertical edges
+        edge_row = list(("+" + "-"*h_space) * self.nC + "+")
+        face_row = list(("|" + " "*h_space) * self.nC + "|")
         rows = []
         for r in range(self.nR):
             rows.append(list(edge_row))  # Create new list for edge row
@@ -140,20 +133,41 @@ class Board:
                 rows.append(list(face_row))  # Create new list for each face row
         rows.append(list(edge_row))  # Final edge row
 
+        def center_str(pos: int, s: str) -> int:
+            """Returns starting position to center string s at pos"""
+            width = len(s)
+            if width <= 1:
+                return pos
+            elif width == 2:
+                return pos - 0  # Center first char
+            else:
+                return pos - 1  # Center second char
+
         # Add vertices
         for (r, c), v in self.v.items():
-            rows[r*v_len][c*h_len] = str(v)
+            v_str = str(v)
+            v_pos = c*h_len
+            start = center_str(v_pos, v_str)
+            rows[r*v_len][start:start + len(v_str)] = v_str
 
         # Add edges
         for (dir, r, c), e in self.e.items():
+            e_str = str(e)
             if dir == EDir.v:
-                rows[r*v_len+v_len//2][c*h_len] = str(e)
-            else:
-                rows[r*v_len][c*h_len + h_len//2] = str(e)
+                e_pos = c*h_len
+                start = center_str(e_pos, e_str)
+                rows[r*v_len+v_len//2][start:start + len(e_str)] = e_str
+            else:  # EDir.h
+                h_center = c*h_len + h_len//2
+                start = center_str(h_center, e_str)
+                rows[r*v_len][start:start + len(e_str)] = e_str
 
         # Add faces
         for (r, c), f in self.f.items():
-            rows[r*v_len+v_len//2][c*h_len + h_len//2] = str(f)
+            f_str = str(f)
+            h_center = c*h_len + h_len//2
+            start = center_str(h_center, f_str)
+            rows[r*v_len+v_len//2][start:start + len(f_str)] = f_str
 
         return "\n".join(["".join(row) for row in rows])
 
@@ -187,10 +201,12 @@ class Board:
             return self.v[vertex_idx]
         return self.boundary_vertex(vertex_idx)
 
-    def face_to_faces(self, face_idx: tuple[int, int]) -> tp.Iterator[Face]:
-        """Yields adjacent faces that share an edge with the given face"""
+    def face_to_faces(self, face_idx: tuple[int, int], include_diagonals: bool = False) -> tp.Iterator[Face]:
+        """Yields adjacent faces that share an edge (or corner if include_diagonals=True) with the given face"""
         r, c = face_idx
         adjacents = [(r-1, c), (r+1, c), (r, c-1), (r, c+1)]
+        if include_diagonals:
+            adjacents.extend([(r-1, c-1), (r-1, c+1), (r+1, c-1), (r+1, c+1)])
         for adj_idx in adjacents:
             if face := self.get_face(adj_idx):
                 yield face
@@ -205,16 +221,14 @@ class Board:
             (EDir.v, r, c)       # left
         ]
         for edge_idx in edge_indices:
-            if edge := self.get_edge(edge_idx):
-                yield edge
+            yield self.e[edge_idx]
 
     def face_to_vertices(self, face_idx: tuple[int, int]) -> tp.Iterator[Vertex]:
         """Yields vertices at the corners of the given face"""
         r, c = face_idx
         vertex_indices = [(r, c), (r, c+1), (r+1, c+1), (r+1, c)]
         for vertex_idx in vertex_indices:
-            if vertex := self.get_vertex(vertex_idx):
-                yield vertex
+            yield self.v[vertex_idx]
 
     def edge_to_faces(self, edge_idx: tuple[EDir, int, int]) -> tp.Iterator[Face]:
         """Yields faces adjacent to the given edge"""
@@ -251,8 +265,7 @@ class Board:
         dir, r, c = edge_idx
         vertex_indices = [(r, c), (r, c+1)] if dir == EDir.h else [(r, c), (r+1, c)]
         for vertex_idx in vertex_indices:
-            if vertex := self.get_vertex(vertex_idx):
-                yield vertex
+            yield self.v[vertex_idx]
 
     def vertex_to_faces(self, vertex_idx: tuple[int, int]) -> tp.Iterator[Face]:
         """Yields faces that have this vertex as a corner"""
@@ -308,4 +321,20 @@ class Board:
                 for r in range(self.nR - n + 1):
                     yield [self.f[(r+i, c)] for i in range(n)]
 
+    def iter_boundary_edges(self) -> tp.Iterator[Edge]:
+        """Yields edges that are on the boundary of the board.
+        
+        This includes:
+        - Vertical edges in leftmost and rightmost columns 
+        - Horizontal edges in top and bottom rows
+        """
+        # Leftmost and rightmost vertical edges
+        for r in range(self.nR):
+            yield self.e[(EDir.v, r, 0)]
+            yield self.e[(EDir.v, r, self.nC)]
+                
+        # Top and bottom horizontal edges
+        for c in range(self.nC):
+            yield self.e[(EDir.h, 0, c)]
+            yield self.e[(EDir.h, self.nR, c)]
 

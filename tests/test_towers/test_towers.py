@@ -1,8 +1,14 @@
-from logicpuzzles.towers import Towers, TowersSolver
+from logicpuzzles.towers.towers import TowersBoard
+from logicpuzzles.towers.towers_solver import TowersSolver
 
-T = Towers(N=12)
-print(T.pretty_print())
+# Create a random puzzle of size 12
+board = TowersBoard(N=5)
+print("Initial puzzle:")
+print(board.pretty())
 
-solver = TowersSolver(T)
-for board in solver.solve():
-    print(T.pretty_print(board))
+# Solve the puzzle
+solver = TowersSolver(board)
+print("\nSolution:")
+for solution in solver.solve():
+    print(solution.pretty())
+    break  # Just show first solution

@@ -1,5 +1,6 @@
 import pytest
-from logicpuzzles.unruly.unruly import UnrulyBoard, UnrulySolver
+from logicpuzzles.unruly.unruly import UnrulyBoard
+from logicpuzzles.unruly.unruly_solver import UnrulySolver
 
 def test_basic_unruly_solve():
     # Test board with a known solution
@@ -19,10 +20,10 @@ def test_basic_unruly_solve():
     
     # Get first solution
     solution = next(solver.solve())
-    print(solver.pretty(solution))
+    print(solution.pretty())
     
-    # Convert solution dict to 2D array for easier testing
-    solution_array = [[solution[(r,c)] for c in range(8)] for r in range(8)]
+    # Convert solution to 2D array for easier testing
+    solution_array = [[solution.f[(r,c)].val for c in range(8)] for r in range(8)]
     N = unruly_board.N
     
     # Test rule 1: No three consecutive same color
@@ -44,7 +45,6 @@ def test_basic_unruly_solve():
     
     for col in zip(*solution_array):
         assert sum(col) == N//2
-
 
 def test_initial_constraints():
     # Test that solution respects initial filled squares
